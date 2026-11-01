@@ -40,8 +40,13 @@ public class CrystalSpawner : MonoBehaviour
             });
         }
 
-        // Highest first
-        spots.Sort((a, b) => b.altitude.CompareTo(a.altitude));
+        // Choose middle-height terrain instead of mountain peaks or deep rivers
+        float targetAltitude = gen.radius + 1f;
+
+        spots.Sort((a, b) =>
+            Mathf.Abs(a.altitude - targetAltitude)
+            .CompareTo(Mathf.Abs(b.altitude - targetAltitude))
+        );
 
         var placed = new List<Vector3>();
         foreach (var s in spots)
