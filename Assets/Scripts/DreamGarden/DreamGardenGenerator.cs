@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[ExecuteAlways]
+//[ExecuteAlways]
 public class DreamGardenGenerator : MonoBehaviour
 {
     [Header("planet")]
@@ -59,10 +59,10 @@ public class DreamGardenGenerator : MonoBehaviour
 
     private void Start()
     {
-        if (Application.isPlaying)
-        {
-            GenerateDreamGarden();
-        }
+        //if (Application.isPlaying)
+        //{
+        //    GenerateDreamGarden();
+        //}
     }
 
     public Vector3 SurfacePoint(float x, float z, float height = 0f)
@@ -127,7 +127,7 @@ public class DreamGardenGenerator : MonoBehaviour
     private List<Vector2Int> GenerateMaze()
     {
         List<Vector2Int> route = null;
-        for (int attempt = 0; attempt < 80; attempt++)
+        for (int attempt = 0; attempt < 5; attempt++)
         {
             openings = new bool[mazeCells, mazeCells, 4];
             bool[,] seen = new bool[mazeCells, mazeCells];
