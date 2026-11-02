@@ -1,7 +1,7 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+//[ExecuteAlways]
 public class DreamGardenGenerator : MonoBehaviour
 {
     [Header("planet")]
@@ -30,9 +30,21 @@ public class DreamGardenGenerator : MonoBehaviour
     private Material barkMaterial;
     private Material lightMaterial;
 
-    private void Start()
+    // Trigger generation via Inspector Context Menu
+    [ContextMenu("Generate Dream Garden")]
+    public void GenerateDreamGarden()
     {
-        // the maze is made before the puzzle is initialized
+        // Clear previous children so they don't stack up when regenerating
+        while (transform.childCount > 0)
+        {
+            Transform child = transform.GetChild(0);
+            if (Application.isPlaying) Destroy(child.gameObject);
+            else DestroyImmediate(child.gameObject);
+        }
+
+        lanterns.Clear();
+        phaseGates.Clear();
+
         random = new System.Random(seed);
         CreateMaterials();
         CreatePlanet();
@@ -45,9 +57,16 @@ public class DreamGardenGenerator : MonoBehaviour
         if (puzzle != null) puzzle.Initialize(lanterns, phaseGates, exit);
     }
 
+    private void Start()
+    {
+        //if (Application.isPlaying)
+        //{
+        //    GenerateDreamGarden();
+        //}
+    }
+
     public Vector3 SurfacePoint(float x, float z, float height = 0f)
     {
-        // project a flat garden coordinate onto the spherical ground
         float r = planetRadius;
         float y = Mathf.Sqrt(Mathf.Max(0.01f, r * r - x * x - z * z));
         Vector3 surface = new Vector3(x, y, z);
@@ -92,7 +111,7 @@ public class DreamGardenGenerator : MonoBehaviour
     {
         GameObject planet = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         planet.name = "planet 2 - the forgotten dream garden";
-        planet.transform.SetParent(transform);
+        planet.transform.SetParent(transform, false);
         planet.transform.localPosition = Vector3.zero;
         planet.transform.localScale = Vector3.one * (planetRadius * 2f);
         planet.GetComponent<Renderer>().sharedMaterial = groundMaterial;
@@ -107,9 +126,8 @@ public class DreamGardenGenerator : MonoBehaviour
 
     private List<Vector2Int> GenerateMaze()
     {
-        // randomized depth-first maze with a guaranteed route to the final cell
         List<Vector2Int> route = null;
-        for (int attempt = 0; attempt < 80; attempt++)
+        for (int attempt = 0; attempt < 5; attempt++)
         {
             openings = new bool[mazeCells, mazeCells, 4];
             bool[,] seen = new bool[mazeCells, mazeCells];
@@ -177,7 +195,6 @@ public class DreamGardenGenerator : MonoBehaviour
 
     private void BuildMaze(List<Vector2Int> route)
     {
-        // place each shared maze wall once
         for (int row = 0; row < mazeCells; row++)
         {
             for (int col = 0; col < mazeCells; col++)
@@ -189,7 +206,6 @@ public class DreamGardenGenerator : MonoBehaviour
             }
         }
 
-        // phase gates block only the route between consecutive memories
         int step = Mathf.Max(3, (route.Count - 1) / 4);
         MakePhaseGate(route[step + 1], route[step + 2], false);
         MakePhaseGate(route[step * 2 + 1], route[step * 2 + 2], true);
@@ -199,7 +215,7 @@ public class DreamGardenGenerator : MonoBehaviour
     {
         int direction = GetDirection(a, b);
         GameObject root = new GameObject(opensInBloom ? "bloom phase gate" : "ruin phase gate");
-        root.transform.SetParent(transform);
+        root.transform.SetParent(transform, false);
         DreamPhaseGate gate = root.AddComponent<DreamPhaseGate>();
         gate.openInBloom = opensInBloom;
         gate.player = puzzle != null ? puzzle.player : null;
@@ -242,8 +258,8 @@ public class DreamGardenGenerator : MonoBehaviour
             Vector2Int cell = route[step * (i + 1)];
             Vector3 at = CellCenter(cell.y, cell.x, 0.1f);
             GameObject baseObject = new GameObject("memory " + (i + 1) + " - " + names[i]);
-            baseObject.transform.SetParent(transform);
-            baseObject.transform.position = at;
+            baseObject.transform.SetParent(transform, false);
+            baseObject.transform.position = transform.TransformPoint(at);
             baseObject.transform.rotation = Quaternion.FromToRotation(Vector3.up, at.normalized);
             DreamLantern memory = baseObject.AddComponent<DreamLantern>();
             memory.orderIndex = i;
@@ -254,7 +270,7 @@ public class DreamGardenGenerator : MonoBehaviour
                 new Vector3(0, 1.6f, 0), Vector3.one * 1.1f, colors[i]);
             memory.orbRenderer = orb.GetComponent<Renderer>();
             GameObject sign = new GameObject("memory label");
-            sign.transform.SetParent(baseObject.transform);
+            sign.transform.SetParent(baseObject.transform, false);
             sign.transform.localPosition = new Vector3(0f, 2.25f, 0f);
             TextMesh text = sign.AddComponent<TextMesh>();
             text.text = (i + 1) + "  " + names[i].ToUpperInvariant();
@@ -270,8 +286,8 @@ public class DreamGardenGenerator : MonoBehaviour
     {
         Vector3 at = CellCenter(cell.y, cell.x, 0.2f);
         GameObject arch = new GameObject("castle portal - locked until 3 memories");
-        arch.transform.SetParent(transform);
-        arch.transform.position = at;
+        arch.transform.SetParent(transform, false);
+        arch.transform.position = transform.TransformPoint(at);
         arch.transform.rotation = Quaternion.FromToRotation(Vector3.up, at.normalized);
         CreatePart(arch.transform, PrimitiveType.Cube, "left ruin pillar",
             new Vector3(-1f, 1.45f, 0f), new Vector3(0.5f, 2.9f, 0.55f), stoneMaterial);
@@ -286,8 +302,8 @@ public class DreamGardenGenerator : MonoBehaviour
 
     private void AddSakuras()
     {
-        // seeded cherry blossoms decorate the perimeter of the garden
         float outer = mazeCells * cellSize * 0.5f + 4f;
+
         for (int i = 0; i < 18; i++)
         {
             float angle = i * Mathf.PI * 2f / 18f;
@@ -295,13 +311,14 @@ public class DreamGardenGenerator : MonoBehaviour
             Vector3 point = SurfacePoint(Mathf.Cos(angle) * distance,
                 Mathf.Sin(angle) * distance, 0.1f);
             GameObject tree = new GameObject("procedural sakura " + i);
-            tree.transform.SetParent(transform);
-            tree.transform.position = point;
+            tree.transform.SetParent(transform, false);
+            tree.transform.position = transform.TransformPoint(point);
             tree.transform.rotation = Quaternion.FromToRotation(Vector3.up, point.normalized);
             float scale = 0.85f + (float)random.NextDouble() * 0.4f;
             tree.transform.localScale = Vector3.one * scale;
             CreatePart(tree.transform, PrimitiveType.Cylinder, "trunk",
                 new Vector3(0, 1.5f, 0), new Vector3(0.28f, 1.5f, 0.28f), barkMaterial);
+
             for (int j = 0; j < 5; j++)
             {
                 float a = j * Mathf.PI * 2f / 5f;
@@ -309,7 +326,11 @@ public class DreamGardenGenerator : MonoBehaviour
                     new Vector3(Mathf.Cos(a) * 1.1f, 3.3f + 0.35f * (j % 2), Mathf.Sin(a) * 1.1f),
                     new Vector3(2.3f, 1.6f, 2.3f), pinkMaterial);
                 Collider c = blossom.GetComponent<Collider>();
-                if (c != null) Destroy(c);
+                if (c != null)
+                {
+                    if (Application.isPlaying) Destroy(c);
+                    else DestroyImmediate(c);
+                }
             }
         }
     }
@@ -322,8 +343,8 @@ public class DreamGardenGenerator : MonoBehaviour
             float x = (i - 1) * 7f;
             Vector3 place = SurfacePoint(x, -outer, 0.3f);
             GameObject house = new GameObject("forgotten suburban house " + i);
-            house.transform.SetParent(transform);
-            house.transform.position = place;
+            house.transform.SetParent(transform, false);
+            house.transform.position = transform.TransformPoint(place);
             house.transform.rotation = Quaternion.FromToRotation(Vector3.up, place.normalized);
             CreatePart(house.transform, PrimitiveType.Cube, "house body", new Vector3(0, 1.4f, 0),
                 new Vector3(3.0f, 2.8f, 2.5f), stoneMaterial);
@@ -335,8 +356,8 @@ public class DreamGardenGenerator : MonoBehaviour
             float x = (i - 1) * 8f;
             Vector3 place = SurfacePoint(x, outer + 1f, 0.3f);
             GameObject ruin = new GameObject("castle ruin " + i);
-            ruin.transform.SetParent(transform);
-            ruin.transform.position = place;
+            ruin.transform.SetParent(transform, false);
+            ruin.transform.position = transform.TransformPoint(place);
             ruin.transform.rotation = Quaternion.FromToRotation(Vector3.up, place.normalized);
             CreatePart(ruin.transform, PrimitiveType.Cylinder, "tower fragment", new Vector3(0, 2.5f, 0),
                 new Vector3(1.5f, 2.5f, 1.5f), stoneMaterial);
@@ -349,8 +370,8 @@ public class DreamGardenGenerator : MonoBehaviour
     {
         GameObject obj = GameObject.CreatePrimitive(type);
         obj.name = label;
-        obj.transform.SetParent(transform);
-        obj.transform.position = position;
+        obj.transform.SetParent(transform, false);
+        obj.transform.position = transform.TransformPoint(position);
         obj.transform.rotation = Quaternion.FromToRotation(Vector3.up, position.normalized);
         obj.transform.localScale = size;
         obj.GetComponent<Renderer>().sharedMaterial = material;
