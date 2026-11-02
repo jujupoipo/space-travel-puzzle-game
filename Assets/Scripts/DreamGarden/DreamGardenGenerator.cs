@@ -59,10 +59,17 @@ public class DreamGardenGenerator : MonoBehaviour
 
     private void Start()
     {
-        //if (Application.isPlaying)
-        //{
-        //    GenerateDreamGarden();
-        //}
+        if (Application.isPlaying)
+        {
+            // Check if the planet or maze components already exist under this transform
+            DreamLantern existingLantern = GetComponentInChildren<DreamLantern>();
+
+            if (existingLantern == null)
+            {
+                // If no lanterns exist yet, automatically generate the garden
+                GenerateDreamGarden();
+            }
+        }
     }
 
     public Vector3 SurfacePoint(float x, float z, float height = 0f)
