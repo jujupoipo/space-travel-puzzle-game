@@ -1,62 +1,81 @@
-using System.Collections.Generic;
 using UnityEngine;
 
 public class TriggerPortal : MonoBehaviour
 {
     [Header("Destination")]
-    public Transform targetSpawnPoint; // The spawn point on the other planet
+    public Transform targetSpawnPoint;
 
     [Header("Settings")]
-    public string playerTag = "Player"; // Make sure your player object has this tag
+    public string playerTag = "Player";
+    [Min(0f)] public float cooldownSeconds = 1f;
+
+    private static float lastTeleportTime = -1000f;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetCooldown()
+    {
+        lastTeleportTime = -1000f;
+    }
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag(playerTag))
+        if (!other.CompareTag(playerTag) || targetSpawnPoint == null) return;
+        if (Time.time - lastTeleportTime < cooldownSeconds) return;
+
+        if (DestinationIsDreamGarden() && !DreamProgression.Planet1Solved)
         {
-            Teleport(other.transform);
+            Planet1Puzzle puzzle = FindAnyObjectByType<Planet1Puzzle>();
+            if (puzzle == null || !puzzle.IsComplete)
+            {
+                Debug.Log("portal locked: finish planet 1 before travelling to the dream garden.");
+                return;
+            }
+            DreamProgression.MarkPlanet1Solved();
         }
+
+        Teleport(other.transform);
+        lastTeleportTime = Time.time;
     }
 
-    private void Teleport(Transform playerTransform)
+    private bool DestinationIsDreamGarden()
     {
-        if (targetSpawnPoint == null) return;
-
-        Rigidbody rb = playerTransform.GetComponent<Rigidbody>();
-        if (rb != null)
+        DreamGardenGenerator garden = FindAnyObjectByType<DreamGardenGenerator>();
+        if (garden != null)
         {
-            rb.linearVelocity = Vector3.zero;
-            rb.angularVelocity = Vector3.zero;
+            // use the destination position, not an unreliable spawn name
+            float limit = Mathf.Max(6f, garden.planetRadius * 1.7f);
+            return Vector3.SqrMagnitude(targetSpawnPoint.position - garden.transform.position)
+                < limit * limit;
         }
 
-        playerTransform.position = targetSpawnPoint.position;
+        string name = targetSpawnPoint.name.ToLowerInvariant();
+        return name.Contains("dreamgarden") || name.Contains("planet2");
+    }
 
-        Vector3 up = targetSpawnPoint.up;
-        playerTransform.rotation = Quaternion.FromToRotation(playerTransform.up, up) * playerTransform.rotation;
+    private void Teleport(Transform actor)
+    {
+        Rigidbody body = actor.GetComponent<Rigidbody>();
+        Vector3 normal = targetSpawnPoint.up;
+        Quaternion rotation = Quaternion.FromToRotation(actor.up, normal) * actor.rotation;
 
-        // Sécurisation pour éviter l'erreur NullReference dans la console
-        if (targetSpawnPoint.name.Contains("Planet2"))
+        if (body != null)
         {
-            DreamGardenGenerator dreamGen = FindAnyObjectByType<DreamGardenGenerator>();
-            if (dreamGen != null)
-            {
-                dreamGen.GenerateDreamGarden();
-
-                DreamPuzzleController puzzleCtrl = FindAnyObjectByType<DreamPuzzleController>();
-                if (puzzleCtrl != null)
-                {
-                    List<DreamLantern> lanterns = new List<DreamLantern>(dreamGen.GetComponentsInChildren<DreamLantern>());
-                    List<DreamPhaseGate> gates = new List<DreamPhaseGate>(dreamGen.GetComponentsInChildren<DreamPhaseGate>());
-
-                    if (lanterns != null && lanterns.Count > 0 && lanterns[lanterns.Count - 1] != null)
-                    {
-                        Vector3 exitPos = lanterns[lanterns.Count - 1].transform.position;
-                        puzzleCtrl.Initialize(lanterns, gates, exitPos);
-                        Debug.Log("SUCCESS: Puzzle initialized via Portal!");
-                    }
-                }
-            }
+            body.linearVelocity = Vector3.zero;
+            body.angularVelocity = Vector3.zero;
+            body.position = targetSpawnPoint.position;
+            body.rotation = rotation;
         }
 
-        Debug.Log("Teleported via portal!");
+        actor.SetPositionAndRotation(targetSpawnPoint.position, rotation);
+        Physics.SyncTransforms();
+
+        // initialize the saved garden without generating a second planet
+        if (DestinationIsDreamGarden())
+        {
+            DreamGardenGenerator garden = FindAnyObjectByType<DreamGardenGenerator>();
+            if (garden != null) garden.EnsureInitialized();
+        }
+
+        Debug.Log("portal travel completed.");
     }
 }

@@ -1,0 +1,14 @@
+DREAM GARDEN - ASSETS DE DESIGN
+
+Shaders proprio do dream garden: Assets/PlanetDesign/DreamGarden/Shaders/
+Materiais e meshes do jardim: Assets/PlanetDesign/DreamGarden/Generated/ (gerados no Unity)
+Prefab do NPC: Assets/PlanetDesign/DreamGarden/Prefabs/ (gerado no Unity)
+
+Packs de origem preservados:
+Assets/MedievalCastlePackLite/
+Assets/JapaneseGarden/JapaneseGardenPackage/
+Assets/Fantasy Forest Environment Free Sample/
+Assets/FantasyStuff/Fantasy_FREE/
+
+Os scripts do editor localizam os packs pelo GUID. Nao mova seus arquivos de origem manualmente.
+Recrie as duas cenas com Tools > Space Travel > Dream Garden > Upgrade Both Scenes - Castle and Forest.

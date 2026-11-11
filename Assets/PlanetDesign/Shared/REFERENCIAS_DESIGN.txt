@@ -1,0 +1,9 @@
+COMPARTILHADOS - PLAYER E RENDER
+
+Assets/Models/AlienCharacter/
+Assets/Models/RobotCharacter/
+Assets/Settings/
+Assets/Shaders/PlanetVertexColor.shadergraph
+Assets/InputSystem_Actions.inputactions
+
+Caminhos fisicos mantidos para preservar referencias das cenas e prefabs existentes.

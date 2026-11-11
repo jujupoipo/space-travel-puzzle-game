@@ -1,0 +1,13 @@
+PLANET 1 - ASSETS DE DESIGN (originais preservados)
+
+Assets/Scenes/planet_changed.unity
+Assets/FirstPlanet.unity
+Assets/Scripts/PlanetGeneration/
+Assets/FreeVegetation-LowPolyNature/FreeVegetation/
+Assets/BrokenVector/LowPolyTreePack/
+Assets/Prefabs/Crystal.prefab
+Assets/Materials/
+Assets/Models/
+
+Os assets continuam nos caminhos originais para nao alterar o projeto das colegas.
+Este catalogo permite encontra-los sem duplicar prefabs e materiais.
