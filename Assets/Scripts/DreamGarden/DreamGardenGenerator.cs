@@ -198,7 +198,8 @@ public partial class DreamGardenGenerator : MonoBehaviour
 
     private void EnsureEnglishSceneText()
     {
-        // keep the serialized player-facing labels in english
+
+
         string[] memoryNames = { "Moon", "Petal", "Star" };
         foreach (DreamLantern lantern in GetComponentsInChildren<DreamLantern>(true))
         {
@@ -274,10 +275,19 @@ public partial class DreamGardenGenerator : MonoBehaviour
 
     private void CreateMaterials()
     {
-        groundMaterial = MakeMaterial("dream moss terrain", new Color(0.36f, 0.45f, 0.36f), true);
+        groundMaterial = MakeMaterial("dream garden three biome ground", new Color(.86f, .87f, .80f), false);
         if (terrainShader != null) groundMaterial.shader = terrainShader;
-        groundMaterial.SetColor("_BaseColor", new Color(.64f, .71f, .59f));
-        ApplySourceTexture(groundMaterial, forestGrassMaterial != null ? forestGrassMaterial : japaneseGrassMaterial);
+        if (groundMaterial.HasProperty("_BaseColor")) groundMaterial.SetColor("_BaseColor", new Color(.86f, .87f, .80f));
+        Texture grass = FindMaterialTexture(forestGrassMaterial != null ? forestGrassMaterial : japaneseGrassMaterial);
+        Texture dirt = FindMaterialTexture(forestDirtMaterial);
+        Texture rock = FindMaterialTexture(japaneseRockMaterial);
+        if (grass != null && groundMaterial.HasProperty("_GrassMap")) groundMaterial.SetTexture("_GrassMap", grass);
+        if (dirt != null && groundMaterial.HasProperty("_DirtMap")) groundMaterial.SetTexture("_DirtMap", dirt);
+        if (rock != null && groundMaterial.HasProperty("_RockMap")) groundMaterial.SetTexture("_RockMap", rock);
+        if (grass != null && groundMaterial.HasProperty("_BaseMap")) groundMaterial.SetTexture("_BaseMap", grass);
+        if (groundMaterial.HasProperty("_Tiling")) groundMaterial.SetFloat("_Tiling", .20f);
+        if (groundMaterial.HasProperty("_RockSlope")) groundMaterial.SetFloat("_RockSlope", .17f);
+        if (groundMaterial.HasProperty("_PlanetRadius")) groundMaterial.SetFloat("_PlanetRadius", planetRadius);
         pathMaterial = MakeMaterial("castle courtyard floor", new Color(0.47f, 0.47f, 0.52f), false);
         ApplySourceTexture(pathMaterial, forestDirtMaterial != null ? forestDirtMaterial : castleMaterial);
         hedgeMaterial = MakeMaterial("castle wall stone", new Color(0.59f, 0.60f, 0.69f), false);
@@ -302,6 +312,22 @@ public partial class DreamGardenGenerator : MonoBehaviour
             pedestalStarMaterial.SetColor("_EmissionColor", new Color(0.8f, 0.65f, 0.3f) * 0.8f);
         }
     }
+
+    private Texture FindMaterialTexture(Material material)
+    {
+        if (material == null) return null;
+        Texture texture = material.HasProperty("_BaseMap") ? material.GetTexture("_BaseMap") : null;
+        if (texture == null && material.HasProperty("_MainTex")) texture = material.GetTexture("_MainTex");
+        return texture;
+    }
+
+    // reuse the already validated pack placement routine for the planet-wide forest
+    public void SpawnWorldDecoration(GameObject prefab, Transform anchor, Vector3 dimensions, string label)
+    {
+        SpawnPackModel(prefab, anchor, dimensions, label);
+    }
+
+    public GameObject ChooseWorldTree(int index) => PickTree(index);
 
     private Material MakeMaterial(string label, Color color, bool doubleSided)
     {

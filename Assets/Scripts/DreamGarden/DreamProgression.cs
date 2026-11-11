@@ -1,6 +1,6 @@
 using UnityEngine;
 
-// progress lasts for this play session, across scene changes; no disk save
+// progress lasts for this play session, across scene changes;
 public static class DreamProgression
 {
     public static bool Planet1Solved { get; private set; }
@@ -49,7 +49,7 @@ public static class DreamProgression
         return false;
     }
 
-    // all callers share the same completion guard, including the final beacon
+    // all callers share the same completion guard
     public static void RestoreMemory(int count)
     {
         if (count == Memories + 1 && ChallengeComplete(Memories)) Memories = Mathf.Clamp(count, 0, 3);

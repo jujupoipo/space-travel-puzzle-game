@@ -17,6 +17,7 @@ public class DreamPuzzleController : MonoBehaviour
     private DreamGardenAtmosphere atmosphere;
     private bool checkpointBloom;
     public bool DialogueOpen => dialogue != null && dialogue.IsOpen;
+    public bool IntroOpen { get; set; }
     public string ChallengeHint => memoriesCollected == 0 ? "Find the Keeper before restoring Moon." :
         memoriesCollected == 1 ? "Garden seals: " + DreamProgression.PetalSteps + " / 3" :
         memoriesCollected == 2 ? "Astral sequence: " + DreamProgression.AstralSteps + " / 4" : "The final arch is awake.";
@@ -83,21 +84,21 @@ public class DreamPuzzleController : MonoBehaviour
         UpdateInitialCheckpoint();
         SetPhase(true);
         ShowNotice("Moon awakens in Bloom. Petal dreams in Ruin. Star shines in Bloom once more.", 8);
-        if (finished && DreamProgression.GameCompleted) LockAtEnding();
     }
 
     private void Update()
     {
-        if (!initialized || player == null || DreamSceneFlow.Busy || DialogueOpen || !PlayerInGarden) return;
+        if (!initialized || player == null || DreamSceneFlow.Busy || DialogueOpen || IntroOpen || !PlayerInGarden) return;
         UpdateInitialCheckpoint();
-        if (finished) return;
+        // the castle exit restores the beacon, but the player must still reach
+        // the return portal. keep phase shifts and checkpoints available.
         if (Input.GetKeyDown(KeyCode.Q)) TryShift();
-        if (Input.GetKeyDown(KeyCode.E)) TryInteract();
+        if (!finished && Input.GetKeyDown(KeyCode.E)) TryInteract();
         if (Input.GetKeyDown(KeyCode.R)) ReturnToCheckpoint();
     }
     public bool TryShift()
     {
-        if (!initialized || finished || DreamSceneFlow.Busy || DialogueOpen || !PlayerInGarden) return false;
+        if (!initialized || DreamSceneFlow.Busy || DialogueOpen || IntroOpen || !PlayerInGarden) return false;
         if (!CanShift) { ShowNotice("Approach a pedestal to shift between Bloom and Ruin.", 3); return false; }
         SetPhase(!isBloom);
         ShowNotice(isBloom ? "Bloom: the rose-colored paths awaken." : "Ruin: the violet passages awaken.", 3);
@@ -117,13 +118,12 @@ public class DreamPuzzleController : MonoBehaviour
     }
     public bool TryInteract()
     {
-        if (!initialized || finished || player == null || DreamSceneFlow.Busy || DialogueOpen || !PlayerInGarden) return false;
+        if (!initialized || finished || player == null || DreamSceneFlow.Busy || DialogueOpen || IntroOpen || !PlayerInGarden) return false;
         if (memoriesCollected == 3 && AtExit())
         {
             finished = true;
             DreamProgression.MarkPlanet2Solved();
-            if (DreamProgression.GameCompleted) LockAtEnding();
-            else ShowNotice("Planet 2 complete! Return to Planet 1 to finish your journey.", 6);
+            ShowNotice("Planet 2 complete! Return through the portal to Planet 1 to finish your journey. Q and R remain available.", 8);
             return true;
         }
         DreamInteraction mechanism = GetNearbyInteraction();
@@ -157,24 +157,9 @@ public class DreamPuzzleController : MonoBehaviour
             nearby.memoryName + " restored. Next: " + NextMemory + ".", 5);
         return true;
     }
-    private void LockAtEnding()
-    {
-        if (player != null)
-        {
-            PlayerController controller = player.GetComponent<PlayerController>();
-            if (controller != null) controller.enabled = false;
-            Rigidbody body = player.GetComponent<Rigidbody>();
-            if (body != null) { body.linearVelocity = Vector3.zero; body.angularVelocity = Vector3.zero; body.isKinematic = true; }
-        }
-        // do not disable cameras belonging to other players in the same scene
-        foreach (PlanetCamera camera in FindObjectsByType<PlanetCamera>())
-            if (camera.target == player) camera.enabled = false;
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
-    }
     public void ReturnToCheckpoint()
     {
-        if (player == null || finished || DialogueOpen || DreamSceneFlow.Busy) return;
+        if (player == null || DialogueOpen || IntroOpen || DreamSceneFlow.Busy) return;
         if (!PlayerInGarden || !checkpointReady)
         {
             ShowNotice("Enter the Garden of Memories before using a checkpoint.", 3);
@@ -258,7 +243,8 @@ public class DreamPuzzleController : MonoBehaviour
     }
     public string GetInteractionHint()
     {
-        if (!initialized || finished || player == null || DialogueOpen || !PlayerInGarden) return "";
+        if (!initialized || player == null || DialogueOpen || !PlayerInGarden) return "";
+        if (finished) return "Q - Shift at pedestals    R - Return to checkpoint    Find the return portal";
         DreamInteraction mechanism = GetNearbyInteraction();
         if (mechanism != null) return "E - " + mechanism.title + "     Q - Bloom / Ruin";
         if (memoriesCollected == 3 && AtExit()) return "E - Restore the starlight beacon";

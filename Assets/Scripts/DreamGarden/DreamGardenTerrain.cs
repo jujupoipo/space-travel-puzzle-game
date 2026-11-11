@@ -1,6 +1,5 @@
 using UnityEngine;
 
-// terrain relief sampled from the same planet noise used on planet 1
 // the playable castle plateau stays smooth while the outer forest receives hills
 [DefaultExecutionOrder(900)]
 public class DreamGardenTerrain : MonoBehaviour
@@ -32,7 +31,12 @@ public class DreamGardenTerrain : MonoBehaviour
         float radial = direction.y > 0 ? Mathf.Max(Mathf.Abs(localX), Mathf.Abs(localZ)) : plateauRadius + transitionWidth;
         float blend = Mathf.Clamp01((radial - plateauRadius) / Mathf.Max(0.01f, transitionWidth));
         blend = blend * blend * (3f - 2f * blend);
-        return noise.GetHeight(direction) * reliefMultiplier * blend;
+        // preserve the existing castle and nearby paths, then raise relief
+        // progressively on the rest of the spherical world
+        float outsideCastle = Mathf.SmoothStep(0f, 1f,
+            Mathf.InverseLerp(.35f, .92f, 1f - direction.y));
+        float worldRelief = 1f + .95f * outsideCastle;
+        return noise.GetHeight(direction) * reliefMultiplier * blend * worldRelief;
     }
 
     [ContextMenu("Apply Dream Terrain Relief")]

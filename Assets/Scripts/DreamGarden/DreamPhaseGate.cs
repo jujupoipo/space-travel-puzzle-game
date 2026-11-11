@@ -16,7 +16,7 @@ public class DreamPhaseGate : MonoBehaviour
         if (blockingWall == null) return;
         if (shouldBlock && player != null)
         {
-            // Works while the wall is disabled; includes capsule clearance.
+            // Works while the wall is disabled;
             BoxCollider box = blockingWall.GetComponent<BoxCollider>();
             if (box != null)
             {

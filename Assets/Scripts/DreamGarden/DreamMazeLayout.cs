@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 
-// a deterministic maze with one long solution route and ordered checkpoints
 // scene geometry is built by DreamGardenGenerator
 public sealed class DreamMazeLayout
 {
